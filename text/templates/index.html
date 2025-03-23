@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>文档转换器</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        .container {
+            display: flex;
+            gap: 20px;
+        }
+        .upload-section {
+            flex: 1;
+            padding: 20px;
+            border: 2px dashed #ccc;
+            border-radius: 10px;
+            text-align: center;
+        }
+        .preview-section {
+            flex: 2;
+            padding: 20px;
+            border: 1px solid #ddd;
+            border-radius: 10px;
+            background: #f8f9fa;
+            min-height: 400px;
+        }
+        .preview-content {
+            white-space: pre-wrap;
+            font-family: monospace;
+        }
+        .btn {
+            padding: 10px 20px;
+            background: #007bff;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+        .btn:hover {
+            background: #0056b3;
+        }
+    </style>
+</head>
+<body>
+    <h1>文档转换器</h1>
+    <div class="container">
+        <div class="upload-section">
+            <h2>上传文件</h2>
+            <form id="uploadForm" enctype="multipart/form-data">
+                <input type="file" name="file" id="fileInput" accept=".md,.docx,.pdf,.html">
+                <br><br>
+                <button type="submit" class="btn">上传并预览</button>
+            </form>
+        </div>
+        <div class="preview-section">
+            <h2>预览</h2>
+            <div id="preview" class="preview-content"></div>
+            <div id="downloadSection" style="display: none;">
+                <br>
+                <a id="downloadLink" class="btn">下载 HTML</a>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        document.getElementById('uploadForm').addEventListener('submit', function(e) {
+            e.preventDefault();
+            
+            const formData = new FormData();
+            formData.append('file', document.getElementById('fileInput').files[0]);
+
+            fetch('/upload', {
+                method: 'POST',
+                body: formData
+            })
+            .then(response => response.json())
+            .then(data => {
+                document.getElementById('preview').innerHTML = data.preview;
+                const downloadLink = document.getElementById('downloadLink');
+                downloadLink.href = data.download_url;
+                downloadLink.textContent = '下载 Word 文档';
+                downloadLink.style.position = 'fixed';
+                downloadLink.style.bottom = '20px';
+                downloadLink.style.right = '20px';
+                document.getElementById('downloadSection').style.display = 'block';
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                alert('文件处理失败');
+            });
+        });
+    </script>
+</body>
+</html>
