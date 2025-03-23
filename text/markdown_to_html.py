@@ -5,8 +5,15 @@ def convert_markdown_to_html(markdown_file, output_file):
     # 读取 Markdown 文件
     markdown_text = Path(markdown_file).read_text(encoding='utf-8')
     
-    # 转换 Markdown 为 HTML
-    html_content = markdown.markdown(markdown_text)
+    # 转换 Markdown 为 HTML，保留标题格式
+    extensions = [
+        'toc',  # 支持标题
+        'fenced_code',  # 支持代码块
+        'tables',  # 支持表格
+        'footnotes',  # 支持脚注
+        'attr_list'  # 支持属性列表
+    ]
+    html_content = markdown.markdown(markdown_text, extensions=extensions)
     
     # 生成完整的 HTML 页面
     full_html = f"""<!DOCTYPE html>

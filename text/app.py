@@ -92,29 +92,36 @@ def index():
 
 @app.route('/upload', methods=['POST'])
 def upload():
-    if 'file' not in request.files:
-        return 'No file uploaded', 400
+    if 'files' not in request.files:
+        return 'No files uploaded', 400
     
-    file = request.files['file']
-    if file.filename == '':
-        return 'No selected file', 400
+    files = request.files.getlist('files')
+    if not files or all(f.filename == '' for f in files):
+        return 'No selected files', 400
     
     try:
-        content = process_file(file)
-        html_content = markdown.markdown(content)
+        results = []
+        for file in files:
+            if file.filename == '':
+                continue
+                
+            content = process_file(file)
+            html_content = markdown.markdown(content)
+            
+            # Save to temp file
+            doc = Document()
+            doc.add_paragraph(content)
+            
+            with tempfile.NamedTemporaryFile(delete=False, suffix='.docx') as tmp:
+                doc.save(tmp.name)
+                tmp_path = tmp.name
+            
+            results.append({
+                'preview': html_content,
+                'download_url': f'/download/{os.path.basename(tmp_path)}'
+            })
         
-        # Save to temp file
-        doc = Document()
-        doc.add_paragraph(content)
-        
-        with tempfile.NamedTemporaryFile(delete=False, suffix='.docx') as tmp:
-            doc.save(tmp.name)
-            tmp_path = tmp.name
-        
-        return {
-            'preview': html_content,
-            'download_url': f'/download/{os.path.basename(tmp_path)}'
-        }
+        return results
     except Exception as e:
         return str(e), 500
 

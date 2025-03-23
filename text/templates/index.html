@@ -6,55 +6,114 @@
     <style>
         body {
             font-family: Arial, sans-serif;
-            max-width: 800px;
-            margin: 0 auto;
-            padding: 20px;
+            background-color: #f5f5f5;
+            margin: 0;
+            padding: 40px 20px;
+            display: flex;
+            justify-content: center;
+            min-height: 100vh;
         }
         .container {
             display: flex;
-            gap: 20px;
+            gap: 30px;
+            width: 90%;
+            max-width: 1200px;
+            background: white;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
         }
         .upload-section {
             flex: 1;
-            padding: 20px;
-            border: 2px dashed #ccc;
+            padding: 30px;
+            border: 2px dashed #1890ff;
             border-radius: 10px;
             text-align: center;
+            background: #fafafa;
         }
         .preview-section {
             flex: 2;
-            padding: 20px;
-            border: 1px solid #ddd;
+            padding: 30px;
+            border: 1px solid #e8e8e8;
             border-radius: 10px;
-            background: #f8f9fa;
+            background: white;
             min-height: 400px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
         }
         .preview-content {
             white-space: pre-wrap;
-            font-family: monospace;
+            font-family: 'Times New Roman', serif;
+            font-size: 12pt;
+            line-height: 1.5;
+            margin: 0;
+            padding: 0;
+            color: #000000;
+            word-break: break-word;
+            overflow-wrap: break-word;
+        }
+        .preview-content h1 {
+            font-size: 24px;
+            font-weight: bold;
+            margin: 20px 0 10px;
+            color: #333;
+        }
+        .preview-content h2 {
+            font-size: 20px;
+            font-weight: bold;
+            margin: 18px 0 8px;
+            color: #444;
+        }
+        .preview-content h3 {
+            font-size: 18px;
+            font-weight: bold;
+            margin: 16px 0 6px;
+            color: #555;
+        }
+        .preview-content h4 {
+            font-size: 16px;
+            font-weight: bold;
+            margin: 14px 0 4px;
+            color: #666;
         }
         .btn {
             padding: 10px 20px;
-            background: #007bff;
+            background: #1890ff;
             color: white;
             border: none;
             border-radius: 5px;
             cursor: pointer;
+            transition: all 0.3s ease;
         }
         .btn:hover {
-            background: #0056b3;
+            background: #40a9ff;
+            transform: translateY(-1px);
+            box-shadow: 0 2px 8px rgba(24, 144, 255, 0.3);
+        }
+        .btn-secondary {
+            background: white;
+            color: #666;
+            border: 1px solid #ddd;
+        }
+        .btn-secondary:hover {
+            background: #f5f5f5;
+            border-color: #ccc;
+            transform: none;
+            box-shadow: none;
         }
     </style>
 </head>
 <body>
-    <h1>文档转换器</h1>
+    <h1 style="font-size: 24px; font-weight: bold; margin-bottom: 20px; color: #333;">文档转换器</h1>
     <div class="container">
         <div class="upload-section">
             <h2>上传文件</h2>
             <form id="uploadForm" enctype="multipart/form-data">
-                <input type="file" name="file" id="fileInput" accept=".md,.docx,.pdf,.html">
-                <br><br>
-                <button type="submit" class="btn">上传并预览</button>
+                <input type="file" name="files" id="fileInput" accept=".md,.docx,.pdf,.html" multiple style="display: none;">
+                <label for="fileInput" class="btn btn-secondary" style="margin-right: 10px;">选择文件</label>
+                <div id="fileList" style="margin-top: 15px; max-height: 200px; overflow-y: auto;">
+                    <div id="fileNames" style="color: #666; padding: 5px;">未选择文件</div>
+                </div>
+                <button type="submit" class="btn" style="margin-top: 20px;">上传并预览</button>
             </form>
         </div>
         <div class="preview-section">
@@ -68,30 +127,158 @@
     </div>
 
     <script>
+        let currentFileIndex = 0;
+        let uploadedFiles = [];
+
+        // 显示选择的文件列表
+        document.getElementById('fileInput').addEventListener('change', function(e) {
+            const fileList = document.getElementById('fileList');
+            fileList.innerHTML = ''; // 清空列表
+            
+            if (this.files.length > 0) {
+                Array.from(this.files).forEach((file, index) => {
+                    const fileItem = document.createElement('div');
+                    fileItem.style.display = 'flex';
+                    fileItem.style.alignItems = 'center';
+                    fileItem.style.justifyContent = 'space-between';
+                    fileItem.style.padding = '5px';
+                    fileItem.style.borderBottom = '1px solid #eee';
+                    
+                    const fileName = document.createElement('span');
+                    fileName.textContent = file.name;
+                    fileName.style.color = '#1890ff';
+                    
+                    const deleteBtn = document.createElement('button');
+                    deleteBtn.textContent = '×';
+                    deleteBtn.style.background = 'none';
+                    deleteBtn.style.border = 'none';
+                    deleteBtn.style.color = '#ff4d4f';
+                    deleteBtn.style.cursor = 'pointer';
+                    deleteBtn.style.fontSize = '16px';
+                    deleteBtn.onclick = () => {
+                        const newFiles = Array.from(this.files).filter((_, i) => i !== index);
+                        const dataTransfer = new DataTransfer();
+                        newFiles.forEach(file => dataTransfer.items.add(file));
+                        this.files = dataTransfer.files;
+                        this.dispatchEvent(new Event('change'));
+                    };
+                    
+                    fileItem.appendChild(fileName);
+                    fileItem.appendChild(deleteBtn);
+                    fileList.appendChild(fileItem);
+                });
+            } else {
+                const emptyMsg = document.createElement('div');
+                emptyMsg.textContent = '未选择文件';
+                emptyMsg.style.color = '#666';
+                emptyMsg.style.padding = '5px';
+                fileList.appendChild(emptyMsg);
+            }
+        });
+
+        // 更新预览
+        function updatePreview(preview, downloadUrl) {
+            document.getElementById('preview').innerHTML = preview;
+            const downloadLink = document.getElementById('downloadLink');
+            downloadLink.href = downloadUrl;
+        }
+
         document.getElementById('uploadForm').addEventListener('submit', function(e) {
             e.preventDefault();
             
+            const files = document.getElementById('fileInput').files;
+            if (files.length === 0) return;
+
+            // 显示加载状态
+            const submitBtn = document.querySelector('#uploadForm button[type="submit"]');
+            submitBtn.disabled = true;
+            submitBtn.textContent = '上传中...';
+            submitBtn.style.opacity = '0.7';
+
+            uploadedFiles = [];
+            currentFileIndex = 0;
+
+            // 创建进度条
+            const progressBar = document.createElement('div');
+            progressBar.style.width = '100%';
+            progressBar.style.height = '4px';
+            progressBar.style.backgroundColor = '#e8e8e8';
+            progressBar.style.borderRadius = '2px';
+            progressBar.style.marginTop = '10px';
+            progressBar.style.position = 'relative';
+            
+            const progressInner = document.createElement('div');
+            progressInner.style.position = 'absolute';
+            progressInner.style.top = '0';
+            progressInner.style.left = '0';
+            progressInner.style.height = '100%';
+            progressInner.style.width = '0%';
+            progressInner.style.backgroundColor = '#1890ff';
+            progressInner.style.transition = 'width 0.3s ease';
+            progressInner.style.borderRadius = '2px';
+            
+            progressBar.appendChild(progressInner);
+            this.appendChild(progressBar);
+
+            // 简单上传逻辑
             const formData = new FormData();
-            formData.append('file', document.getElementById('fileInput').files[0]);
+            Array.from(files).forEach(file => {
+                formData.append('files', file);
+            });
 
             fetch('/upload', {
                 method: 'POST',
                 body: formData
             })
-            .then(response => response.json())
+            .then(response => {
+                if (!response.ok) throw new Error('上传失败');
+                return response.json();
+            })
             .then(data => {
-                document.getElementById('preview').innerHTML = data.preview;
+                updatePreview(data[0].preview, data[0].download_url);
+                
+                // 显示下载和复制按钮
                 const downloadLink = document.getElementById('downloadLink');
-                downloadLink.href = data.download_url;
                 downloadLink.textContent = '下载 Word 文档';
                 downloadLink.style.position = 'fixed';
                 downloadLink.style.bottom = '20px';
                 downloadLink.style.right = '20px';
                 document.getElementById('downloadSection').style.display = 'block';
+
+                // 添加复制按钮
+                const copyBtn = document.createElement('button');
+                copyBtn.className = 'btn';
+                copyBtn.textContent = '复制预览内容';
+                copyBtn.style.position = 'fixed';
+                copyBtn.style.bottom = '70px';
+                copyBtn.style.right = '20px';
+                copyBtn.onclick = function() {
+                    const previewContent = document.getElementById('preview').innerHTML;
+                    const blob = new Blob([previewContent], { type: 'text/html' });
+                    navigator.clipboard.write([
+                        new ClipboardItem({
+                            'text/html': blob
+                        })
+                    ])
+                    .then(() => alert('内容已复制到剪贴板'))
+                    .catch(() => {
+                        // 如果富文本复制失败，回退到纯文本复制
+                        navigator.clipboard.writeText(previewContent)
+                            .then(() => alert('内容已复制到剪贴板'))
+                            .catch(() => alert('复制失败，请手动选择内容复制'));
+                    });
+                };
+                document.body.appendChild(copyBtn);
             })
             .catch(error => {
                 console.error('Error:', error);
-                alert('文件处理失败');
+                alert('文件上传失败，请检查网络连接后重试');
+            })
+            .finally(() => {
+                submitBtn.disabled = false;
+                submitBtn.textContent = '上传并预览';
+                submitBtn.style.opacity = '1';
+                progressBar.remove();
             });
         });
     </script>
